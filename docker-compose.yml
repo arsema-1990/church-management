@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: church_management_system
+      POSTGRES_USER: church
+      POSTGRES_PASSWORD: church
+    ports:
+      - "5432:5432"
+    volumes:
+      - church_postgres:/var/lib/postgresql/data
+volumes:
+  church_postgres:

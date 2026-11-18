@@ -1,0 +1,499 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMINISTRATOR
+  CHURCH_MANAGER
+  CLASS_INSTRUCTOR
+  WORSHIPER
+  MEMBER
+}
+
+enum CourseCategory {
+  BEGINNER
+  HOUSEHOLD
+  CHILDREN
+  NORMAL_DAY_TO_DAY
+}
+
+enum TargetAudience {
+  WORSHIPERS
+  MEMBERS
+  MEMBERS_AND_WORSHIPERS
+  CHILDREN
+}
+
+enum ReviewStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum MaterialType {
+  VIDEO
+  PDF_BOOK
+  DOCUMENT
+  IMAGE
+  AUDIO
+  PRESENTATION
+  ASSIGNMENT
+  QUIZ
+  ONLINE_MEETING
+  OTHER
+}
+
+enum RequestType {
+  COURSE_CERTIFICATE
+  BAPTISM
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum CertificateType {
+  COURSE
+  BAPTISM
+}
+
+enum HomeCellActivityType {
+  BIBLE_STUDY
+  PRAYER
+  ANNOUNCEMENT
+  OTHER
+}
+
+model User {
+  id                        String            @id @default(cuid())
+  username                  String            @unique
+  email                     String            @unique
+  passwordHash              String
+  role                      UserRole          @default(WORSHIPER)
+  isActive                  Boolean           @default(true)
+  emailVerified             Boolean           @default(true)
+  emailVerifiedAt           DateTime?
+  emailVerificationOtpHash  String?
+  emailVerificationOtpExpiresAt DateTime?
+  emailVerificationAttempts Int               @default(0)
+  emailVerificationLastSentAt DateTime?
+  emailVerificationResendCount Int             @default(0)
+  emailVerificationResendWindowStartedAt DateTime?
+  mustChangePassword        Boolean           @default(false)
+  passwordResetOtpHash      String?
+  passwordResetOtpExpiresAt DateTime?
+  passwordResetOtpUsedAt    DateTime?
+  personId                  String?           @unique
+  signatureData             String?           @db.Text
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+  person                    Person?           @relation(fields: [personId], references: [id], onDelete: SetNull)
+  courses                   Course[]          @relation("CourseInstructor")
+  reviewedCourses           Course[]          @relation("CourseReviewer")
+  materials                 CourseMaterial[]  @relation("MaterialInstructor")
+  reviewedMaterials         CourseMaterial[]  @relation("MaterialReviewer")
+  reviewedRequests          PortalRequest[]   @relation("RequestReviewer")
+  issuedCertificates        Certificate[]     @relation("CertificateIssuer")
+  recordedBaptisms          Baptism[]         @relation("BaptismRecorder")
+  notifications             Notification[]
+  sentNotifications         Notification[]    @relation("NotificationSender")
+  assignedClasses           ClassInstructor[]
+  auditEvents               AuditEvent[]
+}
+
+model Person {
+  id                    String               @id @default(cuid())
+  firstName             String
+  middleName            String?
+  lastName              String
+  gender                String?
+  dateOfBirth           DateTime?
+  placeOfBirth          String?
+  phone                 String?
+  officeTelephone       String?
+  homeTelephone         String?
+  email                 String?              @unique
+  photoUrl              String?
+  maritalStatus         String?
+  nationality           String?
+  educationalLevel      String?
+  occupation            String?
+  makingALiving         String?
+  acceptedJesus         String?
+  denomination          String?
+  memberOfThisChurch    String?
+  status                String               @default("Active")
+  // Spiritual journey
+  yearReceivedLord      String?
+  yearBaptized          String?
+  membershipYears       String?
+  previousChurch        String?
+  previousChurchName    String?
+  // Home association
+  sharesHomeAssociation String?
+  homeAssociationReason String?
+  sharesWhoseHouse      String?
+  unionLeaderName       String?
+  // Service history
+  currentService        String?
+  pastService           String?
+  serviceLoad           String?
+  // Family (married head-of-household section)
+  familySize            String?
+  numberOfChildren      String?
+  childrenKnowLord      String?
+  poorNotKnowLord       String?
+  unemployedInHousehold String?
+  // Meta
+  registrationMonth     String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  user                  User?
+  member                Member?
+  addresses             PersonAddress[]
+  parentLinks           ChildParent[]
+  courseProgress        CourseProgress[]
+  enrollments           CourseEnrollment[]
+  requests              PortalRequest[]
+  certificates          Certificate[]
+  baptisms              Baptism[]
+  ledCells              HomeCell[]           @relation("CellLeader")
+  attendance            HomeCellAttendance[]
+
+  @@index([lastName, firstName])
+}
+
+model Address {
+  id          String          @id @default(cuid())
+  country     String?
+  region      String?
+  city        String?
+  subCity     String?
+  woreda      String?
+  kebele      String?
+  houseNumber String?
+  street      String?
+  landmark    String?
+  description String?
+  churches    Church[]
+  people      PersonAddress[]
+}
+
+model PersonAddress {
+  personId    String
+  addressId   String
+  addressType String  @default("Primary Residence")
+  person      Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  address     Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@id([personId, addressId])
+}
+
+model Church {
+  id             String   @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  website        String?
+  motto          String?
+  logoUrl        String?
+  primaryColor   String   @default("#123b68")
+  secondaryColor String   @default("#1976d2")
+  addressId      String?
+  address        Address? @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  @@index([name])
+}
+
+model Member {
+  id               String           @id @default(cuid())
+  personId         String           @unique
+  membershipNumber String           @unique
+  membershipDate   DateTime         @default(now())
+  status           String           @default("Active")
+  person           Person           @relation(fields: [personId], references: [id], onDelete: Cascade)
+  cellMemberships  HomeCellMember[]
+}
+
+model Child {
+  id          String        @id @default(cuid())
+  firstName   String
+  middleName  String?
+  lastName    String?
+  dateOfBirth DateTime?
+  gender      String?
+  grade       String?
+  parentLinks ChildParent[]
+}
+
+model ChildParent {
+  childId    String
+  personId   String
+  parentType String @default("Parent")
+  child      Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parent     Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([childId, personId])
+}
+
+model HomeCell {
+  id          String               @id @default(cuid())
+  name        String
+  location    String?
+  meetingDay  String?
+  meetingTime String?
+  capacity    Int                  @default(20)
+  isActive    Boolean              @default(true)
+  leaderId    String?
+  leader      Person?              @relation("CellLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  members     HomeCellMember[]
+  attendance  HomeCellAttendance[]
+  activities  HomeCellActivity[]
+}
+
+model HomeCellMember {
+  cellId   String
+  memberId String
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+  cell     HomeCell  @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([cellId, memberId])
+}
+
+model HomeCellAttendance {
+  id         String   @id @default(cuid())
+  cellId     String
+  personId   String
+  attendedAt DateTime @default(now())
+  note       String?
+  cell       HomeCell @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([cellId, attendedAt])
+}
+
+model HomeCellActivity {
+  id          String               @id @default(cuid())
+  cellId      String
+  type        HomeCellActivityType
+  title       String
+  description String?
+  scheduledAt DateTime?
+  cell        HomeCell             @relation(fields: [cellId], references: [id], onDelete: Cascade)
+}
+
+model Course {
+  id              String             @id @default(cuid())
+  title           String
+  description     String?            @db.Text
+  category        CourseCategory     @default(NORMAL_DAY_TO_DAY)
+  duration        String?
+  lessons         Json               @default("[]")
+  objectives      String?            @db.Text
+  thumbnailUrl    String?
+  startDate       DateTime?
+  endDate         DateTime?
+  targetAudience  TargetAudience     @default(MEMBERS_AND_WORSHIPERS)
+  minAge          Int?
+  maxAge          Int?
+  status          ReviewStatus       @default(DRAFT)
+  rejectionReason String?            @db.Text
+  instructorId    String
+  reviewerId      String?
+  reviewedAt      DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  instructor      User               @relation("CourseInstructor", fields: [instructorId], references: [id])
+  reviewer        User?              @relation("CourseReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  materials       CourseMaterial[]
+  progress        CourseProgress[]
+  enrollments     CourseEnrollment[]
+  classLinks      CourseClass[]
+  certificates    Certificate[]
+
+  @@index([status, category])
+  @@index([instructorId, status])
+}
+
+model CourseMaterial {
+  id              String       @id @default(cuid())
+  courseId        String
+  instructorId    String
+  reviewerId      String?
+  lessonNumber    Int?
+  title           String
+  type            MaterialType @default(OTHER)
+  fileUrl         String?
+  onlineUrl       String?
+  status          ReviewStatus @default(DRAFT)
+  rejectionReason String?      @db.Text
+  reviewedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor      User         @relation("MaterialInstructor", fields: [instructorId], references: [id])
+  reviewer        User?        @relation("MaterialReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([courseId, status])
+}
+
+model CourseProgress {
+  personId             String
+  courseId             String
+  completedLessons     Json     @default("[]")
+  watchedVideoSegments Json     @default("{}")
+  watchedBiblePages    Json     @default("{}")
+  percentage           Int      @default(0)
+  updatedAt            DateTime @updatedAt
+  person               Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  course               Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([personId, courseId])
+}
+
+model CourseEnrollment {
+  id         String   @id @default(cuid())
+  courseId   String
+  personId   String
+  status     String   @default("Active")
+  enrolledAt DateTime @default(now())
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, personId])
+}
+
+model ChurchClass {
+  id          String            @id @default(cuid())
+  name        String
+  description String?           @db.Text
+  status      String            @default("Active")
+  instructors ClassInstructor[]
+  courseLinks CourseClass[]
+  createdAt   DateTime          @default(now())
+
+  @@unique([name])
+}
+
+model CourseClass {
+  courseId    String
+  classId     String
+  createdAt   DateTime    @default(now())
+  course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  churchClass ChurchClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, classId])
+}
+
+model ClassInstructor {
+  classId     String
+  userId      String
+  assignedAt  DateTime    @default(now())
+  churchClass ChurchClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([classId, userId])
+}
+
+model PortalRequest {
+  id            String        @id @default(cuid())
+  personId      String
+  type          RequestType
+  status        RequestStatus @default(PENDING)
+  details       String?       @db.Text
+  requestedDate DateTime?
+  scheduledDate DateTime?
+  scheduledAddress String? @db.VarChar(500)
+  managerNotes  String?       @db.Text
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  person        Person        @relation(fields: [personId], references: [id], onDelete: Cascade)
+  reviewer      User?         @relation("RequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  certificate   Certificate?
+
+  @@index([status, type, createdAt])
+  @@index([personId, type])
+}
+
+model Baptism {
+  id           String   @id @default(cuid())
+  personId     String
+  recordedById String
+  baptizedAt   DateTime
+  location     String?
+  notes        String?
+  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  recordedBy   User     @relation("BaptismRecorder", fields: [recordedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([personId, baptizedAt])
+}
+
+model Certificate {
+  id                  String          @id @default(cuid())
+  requestId           String?         @unique
+  courseId            String?
+  courseTitleSnapshot String?
+  personId            String
+  type                CertificateType
+  certificateNumber   String          @unique
+  verificationCode    String          @unique
+  issuedAt            DateTime        @default(now())
+  issuerId            String
+  issuerNameSnapshot  String
+  signatureSnapshot   String?         @db.Text
+  qrCodeDataUrl       String?         @db.Text
+  request             PortalRequest?  @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  course              Course?         @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  person              Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+  issuer              User            @relation("CertificateIssuer", fields: [issuerId], references: [id])
+
+  @@unique([personId, courseId])
+  @@index([personId, type])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  category  String
+  title     String
+  message   String    @db.Text
+  targetUrl String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  senderId  String?
+  sender    User?     @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  actorId   String
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  actor     User     @relation(fields: [actorId], references: [id])
+
+  @@index([entity, entityId, createdAt])
+}

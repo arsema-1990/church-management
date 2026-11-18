@@ -1,0 +1,8 @@
+
+> dev:api
+> npm --workspace backend run dev
+
+
+> dev
+> tsx watch src/server.ts
+

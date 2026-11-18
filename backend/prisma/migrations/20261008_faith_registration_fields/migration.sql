@@ -1,0 +1,4 @@
+ALTER TABLE "Person"
+  ADD COLUMN IF NOT EXISTS "acceptedJesus" TEXT,
+  ADD COLUMN IF NOT EXISTS "denomination" TEXT,
+  ADD COLUMN IF NOT EXISTS "memberOfThisChurch" TEXT;

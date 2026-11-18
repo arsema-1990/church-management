@@ -1,0 +1,1 @@
+-- Password-reset tokens are signed JWTs, so this feature requires no schema changes.

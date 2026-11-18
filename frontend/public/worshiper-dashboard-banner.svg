@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 360" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="110" y1="10" x2="1450" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102746"/>
+      <stop offset=".48" stop-color="#264d76"/>
+      <stop offset=".78" stop-color="#bb8257"/>
+      <stop offset="1" stop-color="#e0b24e"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0" cy="0" r="1" gradientTransform="matrix(0 210 -280 0 1335 145)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe9a5" stop-opacity=".96"/>
+      <stop offset=".25" stop-color="#f5c96c" stop-opacity=".54"/>
+      <stop offset="1" stop-color="#f5c96c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hills" x1="780" y1="210" x2="820" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172e49"/>
+      <stop offset="1" stop-color="#09172b"/>
+    </linearGradient>
+    <linearGradient id="foreground" x1="600" y1="290" x2="910" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102039"/>
+      <stop offset="1" stop-color="#071426"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h1600v360H0z"/>
+  <path fill="url(#sun)" d="M0 0h1600v360H0z"/>
+  <path fill="#f5ce79" fill-opacity=".34" d="M0 238c152-42 290-38 436-3 158 38 271 30 413-16 147-47 259-38 380 2 133 44 237 39 371 2v137H0V238Z"/>
+  <path fill="#27445e" fill-opacity=".72" d="M0 276c172-61 322-42 478-12 155 30 265 22 402-25 122-42 241-35 365 7 124 41 235 49 355 7v107H0V276Z"/>
+  <path fill="url(#hills)" d="M0 302c116-31 218-49 343-33 155 19 219 55 356 48 156-8 243-74 394-66 154 8 247 52 507 17v92H0v-58Z"/>
+  <path fill="url(#foreground)" d="M0 329c176-31 288-21 420 5 151 29 271 25 402-6 186-43 292-14 422 10 121 22 232 16 356-6v34H0v-37Z"/>
+  <g fill="#071426" fill-opacity=".9">
+    <path d="M1292 39h17v216h-17z"/>
+    <path d="M1251 98h99v16h-99z"/>
+    <path d="M1280 39h41v14h-41z"/>
+    <path d="M1297 23h7v16h-7z"/>
+  </g>
+  <path stroke="#f1c756" stroke-opacity=".35" stroke-width="2" d="M0 276c172-61 322-42 478-12 155 30 265 22 402-25 122-42 241-35 365 7 124 41 235 49 355 7"/>
+</svg>
