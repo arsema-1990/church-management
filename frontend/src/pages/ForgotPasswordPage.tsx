@@ -105,21 +105,23 @@ export function ForgotPasswordPage() {
     <main className="auth-screen">
       <section className="auth-banner">
         <div className="auth-banner-content">
-          <div className="auth-church-mark">{translateText("✝")}</div>
+          <div className="auth-church-mark">✝</div>
           <p className="auth-church-name">{translateText("Grace Evangelical Church")}</p>
           <h1>{translateText("Grow in Faith.")}<br /><em>{translateText("Find Your Community.")}</em></h1>
           <p className="auth-tagline">{translateText("Worship · Grow · Serve")}</p>
         </div>
       </section>
       <section className="auth-panel">
-        <BackButton fallback="/login" className="auth-back-button" />
-        <div className="auth-card">
+        <div className="auth-panel-top">
+          <BackButton fallback="/login" className="auth-back-button" />
           <div className="lang-toggle-auth">
             <button className={`lang-btn${language === 'en' ? ' active' : ''}`} onClick={() => setLanguage('en')}>{translateText("English")}</button>
             <button className={`lang-btn${language === 'am' ? ' active' : ''}`} onClick={() => setLanguage('am')}>{translateText("አማርኛ")}</button>
           </div>
+        </div>
+        <div className="auth-card">
           <div className="auth-card-header">
-            <div className="auth-card-logo"><span>{translateText("✝")}</span>{translateText("Grace Evangelical Church")}</div>
+            <div className="auth-card-logo"><span>✝</span>{translateText("Grace Evangelical Church")}</div>
             <h2>{token ? t('Choose a new password') : success ? t('Password reset complete') : step === 'verify' ? t('Verify your identity') : step === 'complete' ? t('Set a new password') : t('Forgot your password?')}</h2>
             <p className="auth-card-sub">
               {token

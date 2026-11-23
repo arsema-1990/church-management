@@ -21,7 +21,7 @@ export function LandingPage() {
       {/* Nav */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,6vw,80px)', height: 70, borderBottom: '1px solid rgba(255,255,255,.07)', position: 'sticky', top: 0, zIndex: 10, background: 'rgba(10,22,40,.95)', backdropFilter: 'blur(12px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 800, fontSize: 15 }}>
-          <span style={{ width: 38, height: 38, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 11, display: 'grid', placeItems: 'center', fontSize: 20, color: 'var(--gold-400)' }}>{translateText("✝")}</span>
+          <span style={{ width: 38, height: 38, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 11, display: 'grid', placeItems: 'center', fontSize: 20, color: 'var(--gold-400)' }}>✝</span>
           <span>{translateText("Grace Evangelical Church")}</span>
         </div>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -29,7 +29,7 @@ export function LandingPage() {
             onClick={() => setLanguage(language === 'en' ? 'am' : 'en')}
             style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)', color: 'rgba(255,255,255,.8)', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
           >
-            {language === 'en' ? translateText("አማ") : translateText("EN")}
+            {language === 'en' ? "አማ" : "EN"}
           </button>
           <Link to="/login" style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)', color: 'rgba(255,255,255,.8)', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600 }}>
             {t('Sign in')}
@@ -44,15 +44,17 @@ export function LandingPage() {
       <section className="church-landing-hero" style={{ minHeight: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'clamp(40px,8vw,100px) clamp(20px,6vw,80px)', position: 'relative' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(37,72,128,.45), transparent)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 680 }}>
-          <div style={{ fontSize: 64, color: 'var(--gold-400)', marginBottom: 20 }}>{translateText("✝")}</div>
+          <div style={{ fontSize: 64, color: 'var(--gold-400)', marginBottom: 20 }}>✝</div>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: 'var(--gold-300)', marginBottom: 16 }}>
-            {translateText("GRACE EVANGELICAL CHURCH\n          ")}</p>
+            {translateText("Grace Evangelical Church")}
+          </p>
           <h1 style={{ fontSize: 'clamp(42px,7vw,82px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-.04em', marginBottom: 20 }}>
             {translateText("Grow in Faith.")}<br />
             <span style={{ color: 'var(--gold-400)' }}>{translateText("Find Your Community.")}</span>
           </h1>
           <p style={{ fontSize: 'clamp(15px,2vw,19px)', color: 'rgba(255,255,255,.55)', marginBottom: 40, lineHeight: 1.6 }}>
-            {translateText("A modern church management platform for worship, growth, and community.\n          ")}</p>
+            {translateText("A modern church management platform for worship, growth, and community.")}
+          </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/register" className="landing-btn-primary">
               {translateText("Register as Worshiper\n            ")}</Link>

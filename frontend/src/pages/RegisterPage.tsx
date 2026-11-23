@@ -178,14 +178,14 @@ export function RegisterPage() {
     const err = form.formState.errors[name]?.message as string | undefined;
     return (
       <label className={`field${wide ? ' form-wide' : ''}`}>
-        <span>{label}{required && <span className="portal-req-star"> {translateText("*")}</span>}</span>
+        <span>{translateText(label)}{required && <span className="portal-req-star"> *</span>}</span>
         {type === 'textarea' ? (
-          <textarea rows={3} placeholder={placeholder} {...form.register(name)} aria-invalid={!!err} />
+          <textarea rows={3} placeholder={placeholder ? translateText(placeholder) : undefined} {...form.register(name)} aria-invalid={!!err} />
         ) : (
-          <input type={type} max={max} placeholder={placeholder} autoComplete={autoComplete} {...form.register(name)} aria-invalid={!!err} />
+          <input type={type} max={max} placeholder={placeholder ? translateText(placeholder) : undefined} autoComplete={autoComplete} {...form.register(name)} aria-invalid={!!err} />
         )}
-        {err && <small className="field-error" role="alert">{err}</small>}
-        {name === 'email' && <small style={{ display: 'block', marginTop: 5, color: 'var(--text-muted)' }}>{translateText("Use a unique Gmail address ending in @gmail.com.")}</small>}
+        {err && <small className="field-error" role="alert">{translateText(err)}</small>}
+        {name === 'email' && <small className="field-hint">{translateText("Use a unique Gmail address ending in @gmail.com.")}</small>}
       </label>
     );
   }, [form]);
@@ -196,12 +196,12 @@ export function RegisterPage() {
     const err = form.formState.errors[name]?.message as string | undefined;
     return (
       <label className={`field${wide ? ' form-wide' : ''}`}>
-        <span>{label}{required && <span className="portal-req-star"> {translateText("*")}</span>}</span>
+        <span>{translateText(label)}{required && <span className="portal-req-star"> *</span>}</span>
         <select {...form.register(name)} aria-invalid={!!err}>
-          <option value="">{translateText("Select ")}{label.toLowerCase()}</option>
-          {options.map(option => <option key={option} value={option}>{option}</option>)}
+          <option value="">{translateText("Select ")}{translateText(label).toLowerCase()}</option>
+          {options.map(option => <option key={option} value={option}>{translateText(option)}</option>)}
         </select>
-        {err && <small className="field-error" role="alert">{err}</small>}
+        {err && <small className="field-error" role="alert">{translateText(err)}</small>}
       </label>
     );
   }, [form]);
@@ -212,20 +212,20 @@ export function RegisterPage() {
     const err = form.formState.errors[name]?.message as string | undefined;
     return (
       <label className="field">
-        <span>{label}<span className="portal-req-star"> {translateText("*")}</span></span>
+        <span>{translateText(label)}<span className="portal-req-star"> *</span></span>
         <div className="register-password-wrap">
           <input
             type={visible ? 'text' : 'password'}
             autoComplete={autoComplete}
-            placeholder={name === 'password' ? 'Create a password' : 'Repeat your password'}
+            placeholder={name === 'password' ? translateText('Create a password') : translateText('Repeat your password')}
             {...form.register(name)}
             aria-invalid={!!err}
           />
-          <button type="button" className="register-password-toggle" onClick={onToggle} aria-label={visible ? 'Hide password' : 'Show password'}>
+          <button type="button" className="register-password-toggle" onClick={onToggle} aria-label={visible ? translateText('Hide password') : translateText('Show password')}>
             {visible ? translateText("Hide") : translateText("Show")}
           </button>
         </div>
-        {err && <small className="field-error" role="alert">{err}</small>}
+        {err && <small className="field-error" role="alert">{translateText(err)}</small>}
       </label>
     );
   }, [form]);
@@ -245,12 +245,13 @@ export function RegisterPage() {
     <div className="register-screen">
       <aside className="register-banner">
         <div className="register-banner-content">
-          <div className="auth-church-mark">{translateText("✝")}</div>
+          <div className="auth-church-mark">✝</div>
           <p className="auth-church-name">{translateText("Grace Evangelical Church")}</p>
           <h1>{translateText("Join our ")}<em>{translateText("church family")}</em></h1>
           <p className="auth-tagline">{translateText("Worshiper registration · Grow · Serve")}</p>
           <blockquote className="auth-verse">
-            {translateText("“So in Christ we, though many, form one body, and each member belongs to all the others.”\n            ")}<cite>{translateText("Romans 12:5")}</cite>
+            {translateText('“So in Christ we, though many, form one body, and each member belongs to all the others.”')}
+            <cite>{translateText("Romans 12:5")}</cite>
           </blockquote>
         </div>
 
@@ -263,10 +264,10 @@ export function RegisterPage() {
                 disabled={i > step}
                 onClick={() => { if (i < step) setStep(i); }}
               >
-                <span className="register-step-num">{i < step ? translateText("✓") : String(i + 1)}</span>
+                <span className="register-step-num">{i < step ? "✓" : String(i + 1)}</span>
                 <span>
-                  <strong>{s.label}</strong>
-                  <small>{s.title}</small>
+                  <strong>{translateText(s.label)}</strong>
+                  <small>{translateText(s.title)}</small>
                 </span>
               </button>
             </li>
@@ -275,30 +276,32 @@ export function RegisterPage() {
       </aside>
 
       <section className="register-form-panel">
-        <BackButton fallback="/" className="register-back-button" />
-        <div className="register-form-inner">
+        <div className="register-panel-top">
+          <BackButton fallback="/" className="register-back-button" />
           <div className="register-page-tools">
             <ThemeToggle />
             <div className="lang-toggle-auth">
-              <button type="button" className={`lang-btn${language==='en'?' active':''}`} onClick={() => setLanguage('en')}>{translateText("English")}</button>
-              <button type="button" className={`lang-btn${language==='am'?' active':''}`} onClick={() => setLanguage('am')}>{translateText("አማርኛ")}</button>
+              <button type="button" className={`lang-btn${language==='en'?' active':''}`} onClick={() => setLanguage('en')}>English</button>
+              <button type="button" className={`lang-btn${language==='am'?' active':''}`} onClick={() => setLanguage('am')}>አማርኛ</button>
             </div>
           </div>
+        </div>
 
+        <div className="register-form-inner">
           <div className="register-form-card">
             <div className="register-step-header">
               <div>
                 <p className="register-step-kicker">{translateText("Step ")}{step + 1} {translateText("of ")}{visibleSteps.length}</p>
-                <h2>{visibleSteps[step].title}</h2>
-                <p className="register-step-description">{visibleSteps[step].description}</p>
+                <h2>{translateText(visibleSteps[step].title)}</h2>
+                <p className="register-step-description">{translateText(visibleSteps[step].description)}</p>
               </div>
-              <span className="register-step-count">{String(step + 1).padStart(2, '0')}<small>{translateText("/ ")}{visibleSteps.length}</small></span>
+              <span className="register-step-count">{String(step + 1).padStart(2, '0')}<small>/ {visibleSteps.length}</small></span>
             </div>
 
             <ol className="register-mobile-steps" aria-label={translateText("Registration progress")}>
               {visibleSteps.map((s, i) => (
                 <li key={s.label} className={i === step ? 'active' : i < step ? 'done' : ''}>
-                  <button type="button" disabled={i > step} onClick={() => { if (i < step) setStep(i); }}>{s.label}</button>
+                  <button type="button" disabled={i > step} onClick={() => { if (i < step) setStep(i); }}>{translateText(s.label)}</button>
                 </li>
               ))}
             </ol>
@@ -320,7 +323,7 @@ export function RegisterPage() {
                     </div>
                     <ul className="register-password-checks">
                       {passwordChecks.map(check => (
-                        <li key={check.label} className={check.ok ? 'ok' : ''}>{check.label}</li>
+                        <li key={check.label} className={check.ok ? 'ok' : ''}>{translateText(check.label)}</li>
                       ))}
                     </ul>
                   </div>
@@ -526,7 +529,11 @@ export function RegisterPage() {
                 {step > 0 && <Button variant="outline" onClick={() => setStep(s => s - 1)}>{translateText("Back")}</Button>}
                 {canFinish ? (
                   <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? translateText("Registering…") : `Register as ${registerAsMember ? 'member' : 'worshiper'}`}
+                    {form.formState.isSubmitting
+                      ? translateText("Registering…")
+                      : registerAsMember
+                        ? translateText("Register as member")
+                        : translateText("Register as worshiper")}
                   </Button>
                 ) : (
                   <Button type="submit">{translateText("Continue")}</Button>

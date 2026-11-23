@@ -57,7 +57,7 @@ export function AuthPage() {
       {/* ── Left banner ── */}
       <section className="auth-banner">
         <div className="auth-banner-content">
-          <div className="auth-church-mark">{translateText("✝")}</div>
+          <div className="auth-church-mark">✝</div>
           <p className="auth-church-name">{translateText("Grace Evangelical Church")}</p>
           <h1>
             {translateText("Grow in Faith.")}<br />
@@ -65,33 +65,40 @@ export function AuthPage() {
           </h1>
           <p className="auth-tagline">{translateText("Worship · Grow · Serve")}</p>
           <blockquote className="auth-verse">
-            {translateText("\"For where two or three gather in my name, there am I with them.\"\n            ")}<cite>{translateText("Matthew 18:20")}</cite>
+            {translateText('"For where two or three gather in my name, there am I with them."')}
+            <cite>{translateText("Matthew 18:20")}</cite>
           </blockquote>
         </div>
       </section>
 
       {/* ── Right panel ── */}
       <section className="auth-panel">
-        <BackButton fallback="/" className="auth-back-button" />
-          <div className="auth-card">
-          {/* Language toggle */}
+        <div className="auth-panel-top">
+          <BackButton fallback="/" className="auth-back-button" />
           <div className="lang-toggle-auth">
             <button
+              type="button"
               className={`lang-btn${language === 'en' ? ' active' : ''}`}
               onClick={() => setLanguage('en')}
             >
-              {translateText("English\n            ")}</button>
+              English
+            </button>
             <button
+              type="button"
               className={`lang-btn${language === 'am' ? ' active' : ''}`}
               onClick={() => setLanguage('am')}
             >
-              {translateText("አማርኛ\n            ")}</button>
+              አማርኛ
+            </button>
           </div>
+        </div>
 
+        <div className="auth-card">
           <div className="auth-card-header">
             <div className="auth-card-logo">
-              <span>{translateText("✝")}</span>
-              {translateText("Grace Evangelical Church\n            ")}</div>
+              <span>✝</span>
+              {translateText("Grace Evangelical Church")}
+            </div>
             <h2>{t('Welcome back')}</h2>
             <p className="auth-card-sub">{t('Sign in to continue to your church workspace.')}</p>
           </div>
@@ -102,7 +109,7 @@ export function AuthPage() {
 
           {error && (
             <div className="alert error" role="alert">
-              <span className="alert-icon">{translateText("⚠")}</span>
+              <span className="alert-icon">⚠</span>
               <span>{error}</span>
               {unverifiedEmail && (
                 <Link to={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}>{t('Verify your email address')}</Link>
@@ -125,7 +132,7 @@ export function AuthPage() {
               {form.formState.errors.email && (
                 <small className="field-error">{form.formState.errors.email.message}</small>
               )}
-              <small style={{ display: 'block', marginTop: 5, color: 'var(--text-muted)' }}>{translateText("Worshiper and member accounts use Gmail. Admin and staff use their assigned account email.")}</small>
+              <small className="field-hint">{translateText("Worshiper and member accounts use Gmail. Admin and staff use their assigned account email.")}</small>
             </label>
 
             <label className="field">
@@ -134,7 +141,7 @@ export function AuthPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                placeholder={translateText("••••••••••")}
+                placeholder="••••••••••"
                 {...form.register('password')}
                 aria-invalid={Boolean(form.formState.errors.password)}
               />
@@ -153,7 +160,7 @@ export function AuthPage() {
           </form>
 
           <p className="auth-switch">
-            {t('New to the church?')}{translateText(" ")}
+            {t('New to the church?')}{" "}
             <Link to="/register">{t('Register as a worshiper')}</Link>
           </p>
           <small className="staff-note">

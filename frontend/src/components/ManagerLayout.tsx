@@ -55,7 +55,7 @@ export function ManagerLayout() {
       {/* ── Sidebar ── */}
       <aside className="mgr-sidebar">
         <div className="mgr-sidebar-head">
-          <div className="mgr-cross-mark" aria-hidden="true">{translateText("✝")}</div>
+          <div className="mgr-cross-mark" aria-hidden="true">✝</div>
           {!collapsed && (
             <div className="mgr-brand-text">
               <strong>{translateText("Grace Evangelical")}</strong>

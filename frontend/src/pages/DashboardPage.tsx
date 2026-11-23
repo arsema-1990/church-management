@@ -57,7 +57,6 @@ export function DashboardPage() {
       {/* Welcome */}
       <div className="welcome-banner">
         <div>
-          <p className="eyebrow">{isInstructor ? t('CLASS & COURSE INSTRUCTOR') : isManager ? t('CHURCH MANAGEMENT SYSTEM') : t('MEMBER WORKSPACE')}</p>
           <h1>{t('Welcome back')}{displayName ? `, ${displayName}` : translateText("")}{translateText("!")}</h1>
           <p>
             {isManager
@@ -67,7 +66,7 @@ export function DashboardPage() {
                 : t('Continue your journey in faith and community.')}
           </p>
         </div>
-        <div className="welcome-cross">{translateText("✝")}</div>
+        <div className="welcome-cross" aria-hidden="true">✝</div>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -96,7 +95,7 @@ export function DashboardPage() {
       {isInstructor && (
         <section className="instructor-course-overview">
           <div className="instructor-section-heading">
-            <div><p className="eyebrow">{t('YOUR TEACHING WORKSPACE')}</p><h2>{t('Recent courses')}</h2><p>{t('Track course status and continue preparing your learning materials.')}</p></div>
+            <div><h2>{t('Recent courses')}</h2><p>{t('Track course status and continue preparing your learning materials.')}</p></div>
             <Link to="/instructor/courses" className="btn-outline">{t('Manage courses')} <span aria-hidden="true">{translateText("→")}</span></Link>
           </div>
           {courses.length ? <div className="instructor-course-grid">

@@ -23,9 +23,7 @@ import { WorshiperPortalPage } from './pages/WorshiperPortalPage';
 import { ProfilePage }         from './pages/ProfilePage';
 import { CoursesPage }         from './pages/CoursesPage';
 import { RequestsPage }        from './pages/RequestsPage';
-import { CertificatesPage }    from './pages/CertificatesPage';
 import { ChildrenPage }        from './pages/ChildrenPage';
-import { HomeCellsPage }       from './pages/HomeCellsPage';
 
 import { ContactPage }         from './pages/ContactPage';
 import { PublicContactPage }   from './pages/PublicContactPage';
@@ -141,32 +139,25 @@ export default function App() {
         <Route path="/instructor/home-cells"     element={<InstructorHomeCellsPage />} />
         <Route path="/instructor/courses"       element={<CoursesPage instructor />} />
         <Route path="/instructor/notifications" element={<RecordsPage title={translateText("Notifications")} endpoint="/instructor/notifications" collection="notifications" />} />
+        <Route path="/profile"                   element={<ProfilePage />} />
       </Route>
 
-      {/* ── Worshiper / Member portal (full-page, no sidebar layout) ── */}
-      {/* The WorshiperPortalPage handles its own navigation internally */}
+      {/* ── Worshiper / Member portal (unified sidebar layout) ── */}
+      {/* The WorshiperPortalPage provides the unified, consistent portal workspace */}
       <Route path="/worshiper-portal" element={<MustChangePwd><Guard roles={PORTAL_ROLES}><WorshiperPortalPage /></Guard></MustChangePwd>} />
+      <Route path="/dashboard" element={<MustChangePwd><Guard roles={PORTAL_ROLES}><WorshiperPortalPage /></Guard></MustChangePwd>} />
+      <Route path="/courses" element={<MustChangePwd><Guard roles={PORTAL_ROLES}><WorshiperPortalPage initialTab="courses" /></Guard></MustChangePwd>} />
+      <Route path="/courses/:courseId" element={<MustChangePwd><Guard roles={PORTAL_ROLES}><WorshiperPortalPage initialTab="courses" /></Guard></MustChangePwd>} />
+      <Route path="/certificates" element={<MustChangePwd><Guard roles={PORTAL_ROLES}><WorshiperPortalPage initialTab="certificates" /></Guard></MustChangePwd>} />
+      <Route path="/home-cells" element={<MustChangePwd><Guard roles={PORTAL_ROLES}><WorshiperPortalPage initialTab="homeCell" /></Guard></MustChangePwd>} />
+      <Route path="/profile" element={<MustChangePwd><Guard roles={PORTAL_ROLES}><WorshiperPortalPage initialTab="profile" /></Guard></MustChangePwd>} />
 
-      {/* Worshiper sub-pages that still use the Layout sidebar */}
+      {/* Worshiper secondary sub-pages */}
       <Route element={<MustChangePwd><Guard roles={PORTAL_ROLES}><Layout /></Guard></MustChangePwd>}>
-        <Route path="/profile"      element={<ProfilePage />} />
-        <Route path="/courses"      element={<CoursesPage />} />
-        <Route path="/courses/:courseId" element={<CoursesPage />} />
         <Route path="/requests"     element={<RequestsPage />} />
-        <Route path="/certificates" element={<CertificatesPage />} />
         <Route path="/children"     element={<ChildrenPage />} />
-        <Route path="/home-cells"   element={<HomeCellsPage />} />
         <Route path="/contact/messages" element={<ContactPage />} />
       </Route>
-
-      {/* Worshiper /dashboard → full portal page */}
-      <Route path="/dashboard" element={
-        <MustChangePwd>
-          <Guard roles={PORTAL_ROLES}>
-            <WorshiperPortalPage />
-          </Guard>
-        </MustChangePwd>
-      } />
 
       {/* ── Catch-all ─────────────────────────────────────────────── */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

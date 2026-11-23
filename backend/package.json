@@ -10,7 +10,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "test": "tsx --test src/admin-bootstrap.test.ts src/email-verification.test.ts src/auth-email-verification.test.ts src/course-sequence.test.ts",
-    "test:brevo": "tsx src/test-brevo.ts"
+    "test:brevo": "tsx src/test-brevo.ts",
+    "test:emailjs": "tsx src/test-emailjs.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

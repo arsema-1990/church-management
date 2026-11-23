@@ -328,6 +328,73 @@ Grace Evangelical Church`;
 </html>`;
 
   try {
+    if (emailProvider === 'console') {
+      console.log('--------------------------------------------------');
+      console.log(`[Email Mock / Console] ${heading} to: ${toEmail} (${toName})`);
+      console.log(`[Email Mock / Console] Code: ${otp}`);
+      console.log('--------------------------------------------------');
+      return true;
+    }
+
+    if (emailProvider === 'emailjs') {
+      const serviceId = (process.env.EMAILJS_SERVICE_ID ?? '').trim();
+      const templateId = (
+        (isEmailVerification
+          ? process.env.EMAILJS_VERIFICATION_TEMPLATE_ID
+          : process.env.EMAILJS_PASSWORD_RESET_TEMPLATE_ID) ||
+        process.env.EMAILJS_TEMPLATE_ID ||
+        ''
+      ).trim();
+      const publicKey = (process.env.EMAILJS_PUBLIC_KEY ?? process.env.EMAILJS_USER_ID ?? '').trim();
+      const privateKey = (process.env.EMAILJS_PRIVATE_KEY ?? process.env.EMAILJS_ACCESS_TOKEN ?? '').trim();
+
+      if (!serviceId || !templateId || !publicKey) {
+        console.error('[EmailJS] EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, and EMAILJS_PUBLIC_KEY must be configured.');
+        return false;
+      }
+
+      const payload: Record<string, unknown> = {
+        service_id: serviceId,
+        template_id: templateId,
+        user_id: publicKey,
+        template_params: {
+          to_name: toName,
+          name: toName,
+          to_email: toEmail,
+          email: toEmail,
+          otp,
+          code: otp,
+          passcode: otp,
+          purpose,
+          subject,
+          heading,
+          instruction,
+          message: textContent,
+          html_message: htmlContent,
+        },
+      };
+
+      if (privateKey) {
+        payload.accessToken = privateKey;
+      }
+
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          accept: 'application/json, text/plain, */*',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.error(`[EmailJS] Delivery failed with HTTP ${response.status}: ${errorText}`);
+        return false;
+      }
+      return true;
+    }
+
     if (emailProvider === 'gmail') {
       if (!gmailUser || !gmailAppPassword) {
         console.error('[Gmail SMTP] GMAIL_USER and GMAIL_APP_PASSWORD must be configured.');

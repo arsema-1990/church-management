@@ -55,13 +55,10 @@ export function ManagerDashboardPage() {
       {/* Welcome */}
       <div className="mgr-welcome-banner">
         <div>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.14em', color: 'var(--gold-300)', marginBottom: 8, textTransform: 'uppercase' }}>
-            {isAdmin ? t('ADMINISTRATOR · SYSTEM MANAGEMENT') : t('CHURCH MANAGER')}
-          </p>
           <h1>{t('Welcome back')}{translateText(", ")}{displayName}{translateText("!")}</h1>
           <p className="mgr-welcome-sub">{isAdmin ? t('Administration overview, account access, and church operations.') : t('May God give you wisdom as you serve His people.')}</p>
         </div>
-        <div className="mgr-welcome-cross" aria-hidden="true">{translateText("✝")}</div>
+        <div className="mgr-welcome-cross" aria-hidden="true">✝</div>
       </div>
 
       {error && <div className="mgr-error">{error}</div>}
@@ -101,7 +98,11 @@ export function ManagerDashboardPage() {
               </div>
             ))
           ) : activity.length === 0 ? (
-            <p className="mgr-muted">{t('No recent activity.')}</p>
+            <div className="mgr-empty-state">
+              <span aria-hidden="true">⏱</span>
+              <p>{t('No recent activity recorded.')}</p>
+              <small>{t('Recent registrations, courses, and requests will appear here.')}</small>
+            </div>
           ) : (
             activity.map(a => (
               <div key={a.id} className="mgr-activity-row">
@@ -153,9 +154,9 @@ export function ManagerDashboardPage() {
               ] : []),
               { label: 'Course Approvals',      count: stats?.classCourseApprovals ?? 0, to: '/manager/courses',      color: 'var(--navy-600)' },
             ].map(item => (
-              <Link key={item.to} to={item.to} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-light)', textDecoration: 'none' }}>
-                <span style={{ fontSize: 13, color: 'var(--navy-700)', fontWeight: 500 }}>{t(item.label)}</span>
-                {item.count !== null && <span style={{ background: item.count > 0 ? item.color : 'var(--surface-3)', color: item.count > 0 ? '#fff' : 'var(--text-muted)', borderRadius: 20, padding: '3px 12px', fontSize: 12, fontWeight: 700 }}>{item.count}</span>}
+              <Link key={item.to} to={item.to} className="mgr-approval-row">
+                <span className="mgr-approval-label">{t(item.label)}</span>
+                {item.count !== null && <span className="mgr-approval-badge" style={{ background: item.count > 0 ? item.color : 'var(--surface-3)', color: item.count > 0 ? '#fff' : 'var(--text-muted)' }}>{item.count}</span>}
               </Link>
             ))}
           </div>

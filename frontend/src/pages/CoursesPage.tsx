@@ -57,7 +57,7 @@ export function CoursesPage({ instructor = false, manager = false }: { instructo
   </div>;
 }
 
-function CourseStudy({courseId}:{courseId:string}){
+export function CourseStudy({courseId, onBack}:{courseId:string; onBack?: () => void}){
   const [detail,setDetail]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [loadAttempt,setLoadAttempt]=useState(0);
@@ -78,6 +78,7 @@ function CourseStudy({courseId}:{courseId:string}){
     api.get(`/courses/${courseId}`,{timeout:15000}).then(({data})=>{
       if(!active)return;
       setDetail({ course: data.course, progress: data.progress });
+      if (data.certificate) setCertificate(data.certificate);
       const savedCompleted=data.progress?.completedLessons??[];
       setCompleted(savedCompleted);
       const lessonCount=Array.isArray(data.course.lessons)?data.course.lessons.length:0;
@@ -142,9 +143,9 @@ function CourseStudy({courseId}:{courseId:string}){
   const updateWatchedBiblePages=useCallback((materialId:string,pageCount:number,pages:number[])=>{setWatchedBiblePages(current=>{const next={...current,[materialId]:{pageCount:Math.max(current[materialId]?.pageCount??0,pageCount),pages:[...new Set([...(current[materialId]?.pages??[]),...pages])].sort((a,b)=>a-b)}};watchProgressDirty.current=true;setSaveState('idle');setCertificate(null);return next;});},[]);
   const markLessonFinished=useCallback((index:number)=>{if(index>lastUnlockedIndex||completed.includes(index))return;manualLessonsRef.current=[...new Set([...manualLessonsRef.current,index])];setPendingManualLessons(manualLessonsRef.current);watchProgressDirty.current=true;setSaveState('idle');setCertificate(null);},[completed,lastUnlockedIndex]);
   useEffect(()=>{if(!watchProgressDirty.current)return;const timer=window.setTimeout(()=>void save(),1000);return()=>window.clearTimeout(timer);},[watchedVideoSegments,watchedBiblePages,pendingManualLessons]);
-  if(loading)return <main className="content-wrap course-study-page"><Link className="course-study-back" to="/courses">{translateText("← Back to Courses")}</Link><div className="course-study-loading"><div className="skeleton skeleton-title"/><div className="skeleton skeleton-text"/><div className="skeleton skeleton-card"/></div></main>;
-  if(error||!course)return <main className="content-wrap course-study-page"><Link className="course-study-back" to="/courses">{translateText("← Back to Courses")}</Link><section className="course-study-error"><h1>{translateText("Course couldn’t be loaded")}</h1><p>{error||'This course is unavailable or you do not have access to it.'}</p><button className="btn-primary" onClick={()=>setLoadAttempt(attempt=>attempt+1)}>{translateText("Try again")}</button></section></main>;
-  return <main className="content-wrap course-study-page"><Link className="course-study-back" to="/courses">{translateText("← Back to Courses")}</Link><header className="course-study-header"><div><p className="eyebrow">{courseCategoryLabel(course.category)}</p><h1 id="study-title">{course.title}</h1>{course.description&&<p>{course.description}</p>}</div><div className="course-progress-summary"><strong>{progress}{translateText("%")}</strong><span>{translateText("Course progress")}</span></div></header><div className="course-progress-bar"><div className="progress-track"><span style={{width:`${progress}%`}} /></div><small>{translateText("Finish each lesson using its checkbox to unlock the next one.")}</small></div>
+  if(loading)return <main className="content-wrap course-study-page">{onBack ? <button type="button" className="course-study-back" onClick={onBack}>{translateText("← Back to Courses")}</button> : <Link className="course-study-back" to="/dashboard?tab=courses">{translateText("← Back to Courses")}</Link>}<div className="course-study-loading"><div className="skeleton skeleton-title"/><div className="skeleton skeleton-text"/><div className="skeleton skeleton-card"/></div></main>;
+  if(error||!course)return <main className="content-wrap course-study-page">{onBack ? <button type="button" className="course-study-back" onClick={onBack}>{translateText("← Back to Courses")}</button> : <Link className="course-study-back" to="/dashboard?tab=courses">{translateText("← Back to Courses")}</Link>}<section className="course-study-error"><h1>{translateText("Course couldn’t be loaded")}</h1><p>{error||'This course is unavailable or you do not have access to it.'}</p><button className="btn-primary" onClick={()=>setLoadAttempt(attempt=>attempt+1)}>{translateText("Try again")}</button></section></main>;
+  return <main className="content-wrap course-study-page">{onBack ? <button type="button" className="course-study-back" onClick={onBack}>{translateText("← Back to Courses")}</button> : <Link className="course-study-back" to="/dashboard?tab=courses">{translateText("← Back to Courses")}</Link>}<header className="course-study-header"><div><h1 id="study-title">{course.title}</h1>{course.description&&<p>{course.description}</p>}</div><div className="course-progress-summary"><strong>{progress}{translateText("%")}</strong><span>{translateText("Course progress")}</span></div></header><div className="course-progress-bar"><div className="progress-track"><span style={{width:`${progress}%`}} /></div><small>{translateText("Finish each lesson using its checkbox to unlock the next one.")}</small></div>
     {error&&<div className="error-banner">{error}</div>}
     <div className="study-lesson-list">{lessons.map((lesson,index)=>{
       const lessonVideos=videos.filter(video=>video.lessonNumber===index+1);
@@ -165,7 +166,7 @@ function CourseStudy({courseId}:{courseId:string}){
       </section>;
     })}</div>
     {materials.some(material=>material.lessonNumber==null)&&<div className="lesson-materials course-level-materials"><strong>{translateText("Course materials")}</strong>{materials.filter(material=>material.lessonNumber==null).map(material=><a className="lesson-material-link" key={material.id} href={material.fileUrl??material.onlineUrl??'#'} target="_blank" rel="noreferrer"><span>{material.type==='PDF_BOOK'?translateText("📖"):translateText("↗")} {material.title}</span><small>{material.type.replaceAll('_',' ')}</small></a>)}</div>}
-    {saveState==='saving'&&<p className="mgr-muted">{translateText("Saving watched progress…")}</p>}{saveState==='saved'&&!certificate&&<p className="success-banner">{translateText("Watched progress saved.")}</p>}{certificate&&<div className="success-banner">{translateText("Certificate issued for ")}{certificate.courseTitleSnapshot??course.title}{translateText(". ")}<Link to={`/verify/${certificate.verificationCode}`}>{translateText("Verify certificate")}</Link> {translateText("· ")}<Link to="/certificates">{translateText("Certificate Center")}</Link></div>}{error&&<div className="error-banner">{error}</div>}</main>;
+    {saveState==='saving'&&<p className="mgr-muted">{translateText("Saving watched progress…")}</p>}{saveState==='saved'&&!certificate&&<p className="success-banner">{translateText("Watched progress saved.")}</p>}{certificate&&<div className="success-banner">{translateText("Certificate issued for ")}{certificate.courseTitleSnapshot??course.title}{translateText(". ")}<Link to={`/verify/${certificate.verificationCode}`}>{translateText("Verify certificate")}</Link> {translateText("· ")}<Link to="/dashboard?tab=certificates">{translateText("Certificate Center")}</Link></div>}{error&&<div className="error-banner">{error}</div>}</main>;
 }
 
 type LessonVideoMaterial = { id: string; title: string; fileUrl?: string; onlineUrl?: string };

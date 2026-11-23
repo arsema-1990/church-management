@@ -1,12 +1,13 @@
 import { translateText } from '../i18n/context';
 import { useEffect, useState, useCallback } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, messageFromError } from '../api';
 import { useAuth } from '../state';
 import { downloadCertificatePdf } from '../utils/downloadCertificate';
 import { useLanguage } from '../i18n/context';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { CourseStudy } from './CoursesPage';
 
 /* ─── types ──────────────────────────────────────────────────────────────── */
 type Person = {
@@ -85,11 +86,13 @@ function courseGroupTitle(category: string) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════ */
-export function WorshiperPortalPage() {
+export function WorshiperPortalPage({ initialTab }: { initialTab?: 'home' | 'courses' | 'certificates' | 'homeCell' | 'notifications' | 'messages' | 'profile' } = {}) {
   const { logout } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { courseId: routeCourseId } = useParams<{ courseId?: string }>();
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(routeCourseId ?? null);
   const [data, setData] = useState<DashData | null>(null);
   const [homeCells, setHomeCells] = useState<HomeCell[]>([]);
   const [children, setChildren] = useState<Child[]>([]);
@@ -97,7 +100,24 @@ export function WorshiperPortalPage() {
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState('');
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'home' | 'courses' | 'certificates' | 'homeCell' | 'notifications' | 'messages' | 'profile'>(searchParams.get('tab') === 'messages' ? 'messages' : 'home');
+  const [activeTab, setActiveTab] = useState<'home' | 'courses' | 'certificates' | 'homeCell' | 'notifications' | 'messages' | 'profile'>(
+    routeCourseId ? 'courses' : initialTab ?? (searchParams.get('tab') as any) ?? 'home'
+  );
+
+  useEffect(() => {
+    if (routeCourseId) {
+      setSelectedCourseId(routeCourseId);
+      setActiveTab('courses');
+    }
+  }, [routeCourseId]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['home', 'courses', 'certificates', 'homeCell', 'notifications', 'messages', 'profile'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+      if (tabParam !== 'courses') setSelectedCourseId(null);
+    }
+  }, [searchParams]);
   const [messages, setMessages] = useState<PortalMessage[]>([]);
   const [messageRecipients, setMessageRecipients] = useState<MessageRecipient[]>([]);
   const [messageRecipientId, setMessageRecipientId] = useState('');
@@ -113,18 +133,17 @@ export function WorshiperPortalPage() {
     try {
       const { data: d } = await api.get('/portal/dashboard');
       setData(d);
-      // try load home cell if member
-      if (d.user.role === 'MEMBER') {
-        try {
-          const { data: hc } = await api.get('/portal/home-cell');
-          setHomeCells(hc.homeCells ?? []);
-        } catch { /* not yet in a cell */ }
+      const isMemberUser = d.user?.role === 'MEMBER';
+      const [hcRes, chRes] = await Promise.allSettled([
+        isMemberUser ? api.get('/portal/home-cell') : Promise.resolve(null),
+        api.get('/portal/children'),
+      ]);
+      if (hcRes.status === 'fulfilled' && hcRes.value?.data?.homeCells) {
+        setHomeCells(hcRes.value.data.homeCells);
       }
-      // load children
-      try {
-        const { data: ch } = await api.get('/portal/children');
-        setChildren(ch.children ?? []);
-      } catch { /* no children */ }
+      if (chRes.status === 'fulfilled' && chRes.value?.data?.children) {
+        setChildren(chRes.value.data.children);
+      }
     } catch (e) { setError(messageFromError(e)); }
   }, []);
 
@@ -222,9 +241,9 @@ export function WorshiperPortalPage() {
       { key: 'homeCell' as typeof activeTab, label: t('Home Cell'), icon: '⌂' },
     ] },
     { label: t('Communication'), links: [
-      { key: 'messages', label: t('Messages'), icon: '@' },
+      { key: 'messages', label: t('Messages'), icon: '✉' },
     ] },
-    { label: t('Account'), links: [{ key: 'profile', label: t('Profile'), icon: '○' }] },
+    { label: t('Account'), links: [{ key: 'profile', label: t('Profile'), icon: '👤' }] },
   ];
   const navLinks = navGroups.flatMap(group => group.links);
 
@@ -272,7 +291,13 @@ export function WorshiperPortalPage() {
         <div className="portal-mobile-nav">
           {navLinks.map(link => (
             <button key={link.key} aria-label={link.key === 'notifications' ? link.label : undefined} className={`portal-mobile-link${activeTab === link.key ? ' active' : ''}`}
-              onClick={() => { setActiveTab(link.key); setMobileMenuOpen(false); }}>
+              onClick={() => {
+                setSelectedCourseId(null);
+                setActiveTab(link.key);
+                setMobileMenuOpen(false);
+                if (link.key === 'home') navigate('/dashboard');
+                else navigate(`/dashboard?tab=${link.key}`);
+              }}>
               {link.icon} {link.label}
             </button>
           ))}
@@ -297,7 +322,12 @@ export function WorshiperPortalPage() {
           {group.links.map(link => <button key={link.key}
             className={`portal-sidebar-link${activeTab === link.key ? ' active' : ''}`}
             aria-current={activeTab === link.key ? 'page' : undefined}
-            onClick={() => setActiveTab(link.key)}>
+            onClick={() => {
+              setSelectedCourseId(null);
+              setActiveTab(link.key);
+              if (link.key === 'home') navigate('/dashboard');
+              else navigate(`/dashboard?tab=${link.key}`);
+            }}>
             <span aria-hidden="true">{link.icon}</span><span>{link.label}</span>
             {link.key === 'notifications' && unread > 0 && <span className="portal-sidebar-count">{unread}</span>}
           </button>)}
@@ -316,7 +346,6 @@ export function WorshiperPortalPage() {
             {/* Welcome banner */}
             <div className="portal-welcome">
               <div className="portal-welcome-text">
-                <p className="portal-eyebrow">{translateText("GRACE EVANGELICAL CHURCH")}</p>
                 <h1>{isMember ? translateText("Member Dashboard") : 'Welcome back, ' + person?.firstName + '!'}</h1>
                 <p className="portal-welcome-sub">{isMember ? translateText("Your membership, learning, and church community at a glance.") : t('We are happy to have you as part of our church community.')}</p>
                 <span className={`portal-role-badge ${isMember ? 'member' : 'worshiper'}`}>
@@ -326,24 +355,24 @@ export function WorshiperPortalPage() {
               <div className="portal-welcome-avatar" aria-label={`${fullName(person)} profile photo`}>
                 {person?.photoUrl ? <img src={person.photoUrl} alt={translateText("Your profile")} /> : <span>{person?.firstName?.slice(0, 1).toUpperCase()}</span>}
               </div>
-              <div className="portal-welcome-cross">{translateText("✝")}</div>
+              <div className="portal-welcome-cross" aria-hidden="true">✝</div>
             </div>
 
             <nav className="portal-shortcuts" aria-label={translateText("Quick links")}>
-              <button className="portal-shortcut" onClick={() => setActiveTab('courses')}>
+              <button className="portal-shortcut" onClick={() => { setSelectedCourseId(null); setActiveTab('courses'); navigate('/dashboard?tab=courses'); }}>
                 <span className="portal-shortcut-icon blue">▶</span><strong>{t('Courses')}</strong><small>{translateText("Learn and grow")}</small>
               </button>
-              <button className="portal-shortcut" onClick={() => setActiveTab('courses')}>
+              <button className="portal-shortcut" onClick={() => { setSelectedCourseId(null); setActiveTab('courses'); navigate('/dashboard?tab=courses'); }}>
                 <span className="portal-shortcut-icon green">▤</span><strong>{translateText("Bible Reading")}</strong><small>{translateText("Read study materials")}</small>
               </button>
-              <button className="portal-shortcut" onClick={() => setActiveTab('certificates')}>
+              <button className="portal-shortcut" onClick={() => { setSelectedCourseId(null); setActiveTab('certificates'); navigate('/dashboard?tab=certificates'); }}>
                 <span className="portal-shortcut-icon purple">☆</span><strong>{t('Certificates')}</strong><small>{translateText("View certificates")}</small>
               </button>
-              <button className="portal-shortcut" onClick={() => setActiveTab('homeCell')}>
+              <button className="portal-shortcut" onClick={() => { setSelectedCourseId(null); setActiveTab('homeCell'); navigate('/dashboard?tab=homeCell'); }}>
                 <span className="portal-shortcut-icon orange">⌂</span><strong>{t('Home Cell')}</strong><small>{translateText("Meeting and activities")}</small>
               </button>
-              <button className="portal-shortcut" onClick={() => setActiveTab('messages')}>
-                <span className="portal-shortcut-icon cyan">M</span><strong>{t('Messages')}</strong><small>{translateText("Contact the church")}</small>
+              <button className="portal-shortcut" onClick={() => { setSelectedCourseId(null); setActiveTab('messages'); navigate('/dashboard?tab=messages'); }}>
+                <span className="portal-shortcut-icon cyan">✉</span><strong>{t('Messages')}</strong><small>{translateText("Contact the church")}</small>
               </button>
               <button className="portal-shortcut" onClick={() => navigate('/children')}>
                 <span className="portal-shortcut-icon rose">♧</span><strong>{translateText("My Children")}</strong><small>{children.length ? translateText("Manage family") : translateText("Add a child")}</small>
@@ -360,7 +389,7 @@ export function WorshiperPortalPage() {
             </section>}
 
             {!isMember && <section className="portal-section portal-journey-dashboard">
-              <div className="portal-section-title">{translateText("✦ ")}{t("My Journey")}</div>
+              <h2 className="portal-section-title"><span aria-hidden="true">✦ </span>{t("My Journey")}</h2>
               <div className="portal-journey">
                 {JOURNEY.map((j, i, steps) => (
                   <div key={j.key} className={`portal-journey-step${i < worshiperStep ? " done" : i === worshiperStep ? " current" : ""}`}>
@@ -381,7 +410,11 @@ export function WorshiperPortalPage() {
                 </> : <>
                   <h3>{translateText("Next step: complete the Beginner Course")}</h3>
                   <p>{translateText("Complete the course to receive your certificate. Then you can request baptism.")}</p>
-                  <button className="portal-btn-primary" onClick={() => setActiveTab('courses')}>{translateText("Go to Courses")}</button>
+                  <button className="portal-btn-primary" onClick={() => {
+                    setSelectedCourseId(null);
+                    setActiveTab('courses');
+                    navigate('/dashboard?tab=courses');
+                  }}>{translateText("Go to Courses")}</button>
                 </>}
               </div>
             </section>}
@@ -398,11 +431,26 @@ export function WorshiperPortalPage() {
                     <span>{isMember ? homeCellCourse!.percentage : pct}{translateText("% Complete")}</span>
                     <span>{isMember ? homeCellCourse!.completedLessons.length : beginner!.completedLessons.length} / {isMember ? homeCellCourse!.course.lessons.length : beginner!.course.lessons.length} {t("lessons")}</span>
                   </div>
-                  <button className="portal-btn-primary" onClick={() => setActiveTab("courses")}>{translateText("▶ ")}{t("Continue Course")}</button>
+                  <button className="portal-btn-primary" onClick={() => {
+                    const target = isMember ? homeCellCourse : beginner;
+                    if (target?.course?.id) {
+                      setSelectedCourseId(target.course.id);
+                      setActiveTab("courses");
+                      navigate(`/courses/${target.course.id}`);
+                    } else {
+                      setSelectedCourseId(null);
+                      setActiveTab("courses");
+                      navigate('/dashboard?tab=courses');
+                    }
+                  }}>{translateText("▶ ")}{t("Continue Course")}</button>
                 </> : <>
                   <h3>{isMember ? translateText("Home Cell Advanced Course") : t("Start Your Beginner Course")}</h3>
                   <p>{isMember ? translateText("Begin the advanced course for members from your Courses page.") : t("Your first step is to complete the Beginner Course.")}</p>
-                  <button className="portal-btn-primary" onClick={() => setActiveTab("courses")}>{translateText("▶ ")}{isMember ? t("Browse Member Courses") : t("Start Beginner Course")}</button>
+                  <button className="portal-btn-primary" onClick={() => {
+                    setSelectedCourseId(null);
+                    setActiveTab("courses");
+                    navigate('/dashboard?tab=courses');
+                  }}>{translateText("▶ ")}{isMember ? t("Browse Member Courses") : t("Start Beginner Course")}</button>
                 </>}
               </section>
 
@@ -411,7 +459,13 @@ export function WorshiperPortalPage() {
                   <div><span aria-hidden="true">•</span><h2>{t("Recent Notifications")}</h2></div>
                   <button type="button" onClick={() => setActiveTab("notifications")}>{t("View All")} <span aria-hidden="true">→</span></button>
                 </div>
-                {data.notifications.length === 0 ? <p className="portal-muted">{t("No notifications yet")}</p> : <div className="portal-recent-list">
+                {data.notifications.length === 0 ? (
+                  <div className="portal-notifications-empty">
+                    <span aria-hidden="true">🔔</span>
+                    <p className="portal-muted">{t("No notifications yet")}</p>
+                    <small>{translateText("Announcements and updates from church leadership will appear here.")}</small>
+                  </div>
+                ) : <div className="portal-recent-list">
                   {data.notifications.slice(0, 3).map(notification => <button type="button" key={notification.id} className={`portal-recent-item${notification.readAt ? "" : " unread"}`} onClick={() => { void markRead(notification.id); setActiveTab("notifications"); }}>
                     <span className="portal-recent-icon" aria-hidden="true">{notification.readAt ? "•" : "●"}</span>
                     <span className="portal-recent-copy"><strong>{notification.title}</strong><small>{notification.message}</small></span>
@@ -425,43 +479,61 @@ export function WorshiperPortalPage() {
 
         {/* ════ COURSES TAB ════ */}
         {activeTab === 'courses' && (
-          <div className="portal-tab-section">
-            <div className="portal-tab-header">
-              <h1>{t('My Courses')}</h1>
-              <p>{t('Track your learning journey and course progress. Courses are shown when you are eligible.')}</p>
+          selectedCourseId ? (
+            <div className="portal-tab-section portal-course-study-wrap">
+              <CourseStudy
+                courseId={selectedCourseId}
+                onBack={() => {
+                  setSelectedCourseId(null);
+                  navigate('/dashboard?tab=courses');
+                }}
+              />
             </div>
-            {coursesError && <div className="portal-error">{coursesError}</div>}
-            {coursesLoading ? <div className="portal-loading-inner"><div className="portal-spinner"/><p>{translateText('Loading courses…')}</p></div> : availableCourses.length === 0 ? (
-              <div className="portal-empty">
-                <span aria-hidden="true">▤</span>
-                <strong>{translateText('No eligible courses yet')}</strong>
-                <p>{children.length === 0 ? translateText('Add a child to unlock age-appropriate Children courses.') : translateText('Courses will appear here when published for your account.')}</p>
-                {children.length === 0 && <Link to="/children" className="portal-btn-primary">{translateText('Add a child')}</Link>}
+          ) : (
+            <div className="portal-tab-section">
+              <div className="portal-tab-header">
+                <h1>{t('My Courses')}</h1>
+                <p>{t('Track your learning journey and course progress. Courses are shown when you are eligible.')}</p>
               </div>
-            ) : (
-              <div className="portal-course-sections">
-                {courseGroups.map(([category, groupedCourses]) => <section className="portal-course-section" key={category}>
-                  <h2>{translateText(courseGroupTitle(category))}</h2>
-                  <div className="portal-cards-grid">{groupedCourses.map(course => {
-                  const courseProgress = progress.find(item => item.course.id === course.id);
-                  return <div key={course.id} className="portal-card">
-                    <div className="portal-card-top">
-                      <span className="portal-course-cat">{courseCategoryLabel(course.category)}</span>
-                    </div>
-                    <h3>{course.title}</h3>
-                    {course.description&&<p className="portal-card-detail">{course.description}</p>}
-                    {courseProgress ? <>
-                      <div className="portal-progress-bar-wrap"><div className="portal-progress-bar" style={{ width: `${courseProgress.percentage}%` }} /></div>
-                      <p className="portal-card-detail">{courseProgress.percentage}{translateText("% ")}{t('Complete')}</p>
-                      <p className="portal-card-detail">{courseProgress.completedLessons.length} {translateText("/ ")}{courseProgress.course.lessons.length} {t('lessons')}</p>
-                    </> : <p className="portal-card-detail">{translateText('Not started')}</p>}
-                    <button className="portal-btn-outline" onClick={() => navigate(`/courses/${course.id}`)}>{courseProgress ? t('Continue') : translateText('Start course')}</button>
-                  </div>;
-                })}</div>
-                </section>)}
-              </div>
-            )}
-          </div>
+              {coursesError && <div className="portal-error">{coursesError}</div>}
+              {coursesLoading ? <div className="portal-loading-inner"><div className="portal-spinner"/><p>{translateText('Loading courses…')}</p></div> : availableCourses.length === 0 ? (
+                <div className="portal-empty">
+                  <span aria-hidden="true">▤</span>
+                  <strong>{translateText('No courses available yet')}</strong>
+                  <p>{translateText('Courses for your account will appear here once published by your church instructor.')}</p>
+                  <div style={{ marginTop: 14, fontSize: 13, color: 'var(--text-muted)' }}>
+                    <span>{translateText('Looking to register children for Sunday School?')} </span>
+                    <Link to="/children" style={{ color: 'var(--navy-600)', fontWeight: 700, textDecoration: 'underline' }}>{translateText('Manage Children')}</Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="portal-course-sections">
+                  {courseGroups.map(([category, groupedCourses]) => <section className="portal-course-section" key={category}>
+                    <h2>{translateText(courseGroupTitle(category))}</h2>
+                    <div className="portal-cards-grid">{groupedCourses.map(course => {
+                    const courseProgress = progress.find(item => item.course.id === course.id);
+                    return <div key={course.id} className="portal-card">
+                      <div className="portal-card-top">
+                        <span className="portal-course-cat">{courseCategoryLabel(course.category)}</span>
+                      </div>
+                      <h3>{course.title}</h3>
+                      {course.description&&<p className="portal-card-detail">{course.description}</p>}
+                      {courseProgress ? <>
+                        <div className="portal-progress-bar-wrap"><div className="portal-progress-bar" style={{ width: `${courseProgress.percentage}%` }} /></div>
+                        <p className="portal-card-detail">{courseProgress.percentage}{translateText("% ")}{t('Complete')}</p>
+                        <p className="portal-card-detail">{courseProgress.completedLessons.length} {translateText("/ ")}{courseProgress.course.lessons.length} {t('lessons')}</p>
+                      </> : <p className="portal-card-detail">{translateText('Not started')}</p>}
+                      <button className="portal-btn-outline" onClick={() => {
+                        setSelectedCourseId(course.id);
+                        navigate(`/courses/${course.id}`);
+                      }}>{courseProgress ? t('Continue') : translateText('Start course')}</button>
+                    </div>;
+                  })}</div>
+                  </section>)}
+                </div>
+              )}
+            </div>
+          )
         )}
 
         {/* ════ CERTIFICATES TAB ════ */}

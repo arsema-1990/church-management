@@ -50,13 +50,13 @@ export function Layout({ children }: { children?: ReactNode } = {}) {
       <header className="topbar">
         {location.pathname !== dashboardPath && <BackButton fallback={dashboardPath} />}
         <div className="brand">
-          <span className="brand-mark">{translateText("✝")}</span>
+          <span className="brand-mark">✝</span>
           <span>
-            {translateText("Grace Evangelical Church\n            ")}<small>{translateText("Church Management System")}</small>
+            {translateText("Grace Evangelical Church")}<small>{translateText("Church Management System")}</small>
           </span>
         </div>
         <nav className="top-links">
-          {isInstructor && <NavLink to="/instructor/notifications" className="dashboard-notification" aria-label={translateText("Notifications")} title={translateText("Notifications")}>{translateText("🔔")}</NavLink>}
+          {isInstructor && <NavLink to="/instructor/notifications" className="dashboard-notification" aria-label={translateText("Notifications")} title={translateText("Notifications")}>🔔</NavLink>}
           <ThemeToggle />
           <button
             className="language-toggle"

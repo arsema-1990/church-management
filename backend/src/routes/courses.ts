@@ -42,8 +42,8 @@ function isEligibleForCourse(
     }),
   );
 
-  // A member has moved beyond the Beginner Course and receives member courses.
-  if (course.category === CourseCategory.BEGINNER)  return isWorshiper && !isMember;
+  // Foundational faith course is accessible to both worshipers and members
+  if (course.category === CourseCategory.BEGINNER)  return isWorshiper || isMember;
   if (course.category === CourseCategory.HOUSEHOLD) return isMember;
 
   // Children course: visible to WORSHIPER or MEMBER who has registered children
@@ -143,6 +143,97 @@ router.get('/classes', async (_req, res) => {
   });
   res.json({ classes });
 });
+
+async function ensureCourseCertificateIssued(
+  personId: string,
+  course: { id: string; title: string; instructorId: string },
+) {
+  const existing = await prisma.certificate.findUnique({
+    where: { personId_courseId: { personId, courseId: course.id } },
+  });
+  if (existing) return existing;
+
+  // Find preferred issuer:
+  // 1. Church Manager or Administrator with signature
+  // 2. Any active Church Manager or Administrator
+  // 3. The course Instructor
+  let issuer = await prisma.user.findFirst({
+    where: {
+      role: { in: [UserRole.CHURCH_MANAGER, UserRole.ADMINISTRATOR] },
+      isActive: true,
+      signatureData: { not: null },
+    },
+    orderBy: [
+      { role: 'asc' }, // prefer CHURCH_MANAGER over ADMINISTRATOR
+      { updatedAt: 'desc' },
+    ],
+    select: { id: true, signatureData: true },
+  });
+
+  if (!issuer) {
+    issuer = await prisma.user.findFirst({
+      where: {
+        role: { in: [UserRole.CHURCH_MANAGER, UserRole.ADMINISTRATOR] },
+        isActive: true,
+      },
+      orderBy: [
+        { role: 'asc' },
+        { createdAt: 'asc' },
+      ],
+      select: { id: true, signatureData: true },
+    });
+  }
+
+  const issuerId = issuer?.id || course.instructorId;
+
+  const certificate = await issueCertificate({
+    personId,
+    type: 'COURSE',
+    issuerId,
+    courseId: course.id,
+    courseTitleSnapshot: course.title,
+  });
+
+  const legacyRequests = await prisma.portalRequest.findMany({
+    where: {
+      personId,
+      type: 'COURSE_CERTIFICATE',
+      status: { in: ['PENDING', 'APPROVED'] },
+    },
+    select: { id: true, managerNotes: true },
+  });
+  for (const request of legacyRequests) {
+    await prisma.portalRequest.update({
+      where: { id: request.id },
+      data: {
+        status: 'COMPLETED',
+        managerNotes: [request.managerNotes, `Certificate issued automatically for ${course.title}.`].filter(Boolean).join('\n'),
+        reviewedById: issuerId,
+        reviewedAt: new Date(),
+      },
+    });
+  }
+
+  const personUser = await prisma.user.findFirst({ where: { personId }, select: { id: true } });
+  if (personUser) {
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: personUser.id,
+          category: 'course',
+          title: 'Course certificate issued',
+          message: `Your certificate for ${course.title} has been issued.`,
+          targetUrl: '/certificates',
+        },
+      });
+    } catch (error) {
+      console.error('Course certificate notification failed:', error);
+    }
+  }
+
+  return certificate;
+}
+
 router.get('/:id', async (req, res) => {
   const id = asParamString(req.params.id);
   const course = await prisma.course.findFirst({ where: { id, status: ReviewStatus.PUBLISHED }, include: { materials: { where: { status: ReviewStatus.PUBLISHED }, orderBy: [{ lessonNumber: 'asc' }, { createdAt: 'asc' }] }, instructor: { select: { username: true, person: true } } } });
@@ -159,7 +250,17 @@ router.get('/:id', async (req, res) => {
   }
   const personId = sequence.personId;
   const progress = personId ? await prisma.courseProgress.findUnique({ where: { personId_courseId: { personId, courseId: course.id } } }) : null;
-  res.json({ course, progress });
+  let certificate = null;
+  if (personId && progress && progress.percentage >= 100) {
+    try {
+      certificate = await ensureCourseCertificateIssued(personId, course);
+    } catch (e) {
+      console.error('Failed to auto-issue certificate on course view:', e);
+    }
+  } else if (personId) {
+    certificate = await prisma.certificate.findUnique({ where: { personId_courseId: { personId, courseId: course.id } } });
+  }
+  res.json({ course, progress, certificate });
 });
 router.post('/:id/progress', validateBody(z.object({
   watchedVideoSegments: z.record(z.string(), z.array(z.number().int().min(0).max(99)).max(100)),
@@ -270,71 +371,11 @@ router.post('/:id/progress', validateBody(z.object({
   let certificate = null;
   let certificateIssueError: string | undefined;
   if (courseCompleted) {
-    const issuer = await prisma.user.findFirst({
-      where: { role: UserRole.CHURCH_MANAGER, isActive: true, signatureData: { not: null } },
-      orderBy: { updatedAt: 'desc' },
-      select: { id: true, signatureData: true },
-    });
-    if (!issuer?.signatureData?.trim()) {
-      certificateIssueError = 'Progress saved. An active Church Manager signature must be configured before issuing the certificate.';
-    } else {
-      const existing = await prisma.certificate.findUnique({
-        where: { personId_courseId: { personId, courseId: course.id } },
-        select: { id: true },
-      });
-      try {
-        certificate = await issueCertificate({
-          personId,
-          type: 'COURSE',
-          issuerId: issuer.id,
-          courseId: course.id,
-          courseTitleSnapshot: course.title,
-        });
-      } catch (error) {
-        console.error('Automatic course certificate issuance failed:', error);
-        certificateIssueError = 'Progress saved, but the certificate could not be issued. Please contact the Church Manager.';
-      }
-
-      if (certificate) {
-        const legacyRequests = await prisma.portalRequest.findMany({
-          where: {
-            personId,
-            type: 'COURSE_CERTIFICATE',
-            status: { in: ['PENDING', 'APPROVED'] },
-          },
-          select: { id: true, managerNotes: true },
-        });
-        for (const request of legacyRequests) {
-          await prisma.portalRequest.update({
-            where: { id: request.id },
-            data: {
-              status: 'COMPLETED',
-              managerNotes: [request.managerNotes, `Certificate issued automatically for ${course.title}.`].filter(Boolean).join('\n'),
-              reviewedById: issuer.id,
-              reviewedAt: new Date(),
-            },
-          });
-        }
-
-        if (!existing) {
-          const personUser = await prisma.user.findFirst({ where: { personId }, select: { id: true } });
-          if (personUser) {
-            try {
-              await prisma.notification.create({
-                data: {
-                  userId: personUser.id,
-                  category: 'course',
-                  title: 'Course certificate issued',
-                  message: `Your certificate for ${course.title} has been issued.`,
-                  targetUrl: '/certificates',
-                },
-              });
-            } catch (error) {
-              console.error('Course certificate notification failed:', error);
-            }
-          }
-        }
-      }
+    try {
+      certificate = await ensureCourseCertificateIssued(personId, course);
+    } catch (error) {
+      console.error('Automatic course certificate issuance failed:', error);
+      certificateIssueError = 'Progress saved, but the certificate could not be issued. Please contact the Church Manager.';
     }
   }
   res.json({ progress, certificate, certificateIssueError });
